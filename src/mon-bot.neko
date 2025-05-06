@@ -1,0 +1,40 @@
+
+// Importer Discord.neko
+nekimporter Discord.neko;
+
+// Configuration du bot 
+variable TOKEN = "VOTRE_TOKEN_DISCORD"; // Remplacez par votre token
+variable PREFIX = "!";
+
+// Initialiser le bot
+Discord.nekConnection(TOKEN); 
+Discord.nekStatus("En ligne avec nekoScript");
+
+// Commande !bonjour
+Discord.nekCommande("bonjour", fonction(message) {
+  message.repondre("Bonjour " + message.auteur + "! 👋");
+});
+
+// Commande !aide
+Discord.nekCommande("aide", fonction(message) {
+  const embed = Discord.nekEmbed(
+    "📚 Aide",
+    "Liste des commandes:\n" +
+    PREFIX + "bonjour - Dire bonjour\n" + 
+    PREFIX + "aide - Voir ce message",
+    "#3498db"
+  );
+  message.repondre(embed);
+});
+
+// Événement quand un membre rejoint
+Discord.nekEvenement("utilisateurRejoint", fonction(membre) {
+  const bienvenue = Discord.nekEmbed(
+    "👋 Bienvenue!",
+    "Bienvenue sur le serveur " + membre + "!",
+    "#2ecc71"
+  );
+  membre.envoyer(bienvenue);
+});
+
+neko = ("Bot démarré! Utilisez " + PREFIX + "aide pour voir les commandes");
