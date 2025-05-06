@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "name": "neko-script-cli",
+  "version": "1.0.0",
+  "description": "CLI pour nekoScript - Un langage de programmation en français",
+  "bin": {
+    "neko-script": "./neko-script.js"
+  }
+}
