@@ -1,0 +1,55 @@
+// Exemple de bot Discord en nekoScript
+// Créé le 06/05/2025
+
+// Importer la bibliothèque Discord
+nekimporter Discord.neko;
+
+// Configurer le bot Discord
+Discord.nekConnection("VOTRE_TOKEN_ICI");
+Discord.nekStatus("Joue à nekoScript");
+
+// Fonction pour envoyer un message de bienvenue
+fonction bienvenueUtilisateur(utilisateur) {
+  neko = ("Nouvel utilisateur: " plus utilisateur);
+  nekRetour(Discord.nekEmbed(
+    "Bienvenue sur le serveur!",
+    "Merci de nous avoir rejoint, " plus utilisateur plus "!",
+    "#9B59B6"
+  ));
+}
+
+// Définir des commandes pour le bot
+Discord.nekCommande("salut", fonction() {
+  neko = ("Commande salut exécutée");
+  nekRetour("Bonjour! Je suis un bot créé avec nekoScript! 🐱");
+});
+
+Discord.nekCommande("aide", fonction() {
+  neko = ("Commande aide exécutée");
+  nekRetour(Discord.nekEmbed(
+    "Commandes disponibles",
+    "!salut - Salue l'utilisateur\n!aide - Affiche ce message\n!info - Informations sur le bot",
+    "#3498DB"
+  ));
+});
+
+Discord.nekCommande("info", fonction() {
+  neko = ("Commande info exécutée");
+  
+  // Calculer depuis combien de temps le bot est en ligne
+  compteneko = 10 multiplier 24;
+  
+  nekRetour(Discord.nekEmbed(
+    "Informations sur le bot",
+    "Bot créé avec nekoScript\nEn ligne depuis " plus compteneko plus " heures\nVersion 1.0.0",
+    "#2ECC71"
+  ));
+});
+
+// Événement lorsqu'un utilisateur rejoint le serveur
+Discord.nekEvenement("utilisateurRejoint", fonction(utilisateur) {
+  bienvenueUtilisateur(utilisateur);
+});
+
+neko = ("Bot Discord initialisé avec succès !");
+neko = ("Utilisez les commandes !salut, !aide et !info pour interagir avec le bot.");

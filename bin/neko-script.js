@@ -78,50 +78,116 @@ function executeNekoScript(code) {
   const lines = code.split('\n');
   const messages = [];
   
+  // Variables pour suivre les fonctions
+  let inFunction = false;
+  let bracketCount = 0;
+  let currentFunction = "";
+  let definedFunctions = {};
+  
   for (const line of lines) {
     const trimmedLine = line.trim();
     
     // Ignorer les commentaires et les lignes vides
     if (!trimmedLine || trimmedLine.startsWith('//')) continue;
     
+    // Comptage des accolades pour les fonctions
+    if (inFunction) {
+      // Compter les accolades ouvrantes
+      const openBrackets = (trimmedLine.match(/{/g) || []).length;
+      bracketCount += openBrackets;
+      
+      // Compter les accolades fermantes
+      const closeBrackets = (trimmedLine.match(/}/g) || []).length;
+      bracketCount -= closeBrackets;
+      
+      // Si on a fermé toutes les accolades, on sort de la fonction
+      if (bracketCount <= 0) {
+        inFunction = false;
+        console.log(`${colors.fg.green}Fin de la fonction ${currentFunction}${colors.reset}`);
+        currentFunction = "";
+        continue;
+      }
+      
+      // Pour les lignes à l'intérieur d'une fonction, on ne les interprète pas directement
+      if (trimmedLine.startsWith('neko = (')) {
+        console.log(`${colors.fg.cyan}→ Instruction d'affichage dans la fonction${colors.reset}`);
+      }
+      else if (trimmedLine.startsWith('nekRetour(')) {
+        console.log(`${colors.fg.cyan}→ Valeur retournée par la fonction${colors.reset}`);
+      }
+      else if (trimmedLine.startsWith('compteneko = ')) {
+        console.log(`${colors.fg.cyan}→ Opération mathématique dans la fonction${colors.reset}`);
+      }
+      else {
+        console.log(`${colors.fg.cyan}→ Instruction dans la fonction${colors.reset}`);
+      }
+      
+      continue;
+    }
+    
     // Console output: neko = ("message");
     if (trimmedLine.startsWith('neko = (') && trimmedLine.endsWith(');')) {
-      const message = trimmedLine.substring(8, trimmedLine.length - 2);
-      // Remove quotes
-      const cleanMessage = message.replace(/^"|"$/g, '');
-      console.log(cleanMessage);
+      try {
+        let message = trimmedLine.substring(8, trimmedLine.length - 2);
+        
+        // Gérer les doubles guillemets
+        if (message.startsWith('"') && message.endsWith('"')) {
+          message = message.substring(1, message.length - 1);
+        }
+        
+        // Gérer l'opérateur de concaténation "plus"
+        if (message.includes(' plus ')) {
+          const parts = message.split(' plus ');
+          const result = parts.map(part => {
+            if (part.startsWith('"') && part.endsWith('"')) {
+              return part.substring(1, part.length - 1);
+            }
+            return part;
+          }).join('');
+          
+          console.log(result);
+        } else {
+          console.log(message);
+        }
+      } catch (error) {
+        console.error(`${colors.fg.red}Erreur lors de l'affichage: ${error.message}${colors.reset}`);
+      }
     }
     // Math operations: compteneko = x operation y;
     else if (trimmedLine.startsWith('compteneko = ') && trimmedLine.endsWith(';')) {
-      const expression = trimmedLine.substring(12, trimmedLine.length - 1);
-      
-      // Parse simple math expressions
-      const parts = expression.split(/\s+(plus|moins|multiplier|diviser)\s+/);
-      if (parts.length === 3) {
-        const [leftStr, operator, rightStr] = parts;
-        const left = parseInt(leftStr, 10);
-        const right = parseInt(rightStr, 10);
+      try {
+        const expression = trimmedLine.substring(12, trimmedLine.length - 1);
         
-        let result;
-        switch (operator) {
-          case 'plus':
-            result = left + right;
-            break;
-          case 'moins':
-            result = left - right;
-            break;
-          case 'multiplier':
-            result = left * right;
-            break;
-          case 'diviser':
-            result = left / right;
-            break;
-          default:
-            console.error(`${colors.fg.red}Opération non reconnue: ${operator}${colors.reset}`);
-            continue;
+        // Parse simple math expressions
+        const parts = expression.split(/\s+(plus|moins|multiplier|diviser)\s+/);
+        if (parts.length === 3) {
+          const [leftStr, operator, rightStr] = parts;
+          const left = parseInt(leftStr, 10);
+          const right = parseInt(rightStr, 10);
+          
+          let result;
+          switch (operator) {
+            case 'plus':
+              result = left + right;
+              break;
+            case 'moins':
+              result = left - right;
+              break;
+            case 'multiplier':
+              result = left * right;
+              break;
+            case 'diviser':
+              result = left / right;
+              break;
+            default:
+              console.error(`${colors.fg.red}Opération non reconnue: ${operator}${colors.reset}`);
+              continue;
+          }
+          
+          console.log(`${colors.fg.green}compteneko: ${result}${colors.reset}`);
         }
-        
-        console.log(`${colors.fg.green}compteneko: ${result}${colors.reset}`);
+      } catch (error) {
+        console.error(`${colors.fg.red}Erreur lors du calcul: ${error.message}${colors.reset}`);
       }
     }
     // Fonctions diverses
@@ -138,27 +204,68 @@ function executeNekoScript(code) {
       console.log(`${colors.fg.cyan}Commande Discord exécutée${colors.reset}`);
     }
     else if (trimmedLine.startsWith('nekimporter ')) {
-      const library = trimmedLine.substring(12, trimmedLine.length - 1);
-      
-      // Vérifier si la bibliothèque existe
-      const libPath = path.join(NEKO_HOME, 'libs', library);
-      if (fs.existsSync(libPath)) {
-        console.log(`${colors.fg.green}Bibliothèque ${library} importée${colors.reset}`);
-      } else {
-        console.log(`${colors.fg.yellow}Bibliothèque ${library} introuvable, importation simulée${colors.reset}`);
+      try {
+        const library = trimmedLine.substring(12, trimmedLine.length - 1);
+        
+        // Vérifier si la bibliothèque existe
+        const libPath = path.join(NEKO_HOME, 'libs', library);
+        if (fs.existsSync(libPath)) {
+          console.log(`${colors.fg.green}Bibliothèque ${library} importée${colors.reset}`);
+        } else {
+          console.log(`${colors.fg.yellow}Bibliothèque ${library} introuvable, importation simulée${colors.reset}`);
+        }
+      } catch (error) {
+        console.error(`${colors.fg.red}Erreur lors de l'importation: ${error.message}${colors.reset}`);
       }
     }
-    else if (trimmedLine.includes('fonction') && trimmedLine.includes('{')) {
-      const funcName = trimmedLine.match(/fonction\s+(\w+)/);
-      if (funcName && funcName[1]) {
-        console.log(`${colors.fg.green}Fonction ${funcName[1]} définie${colors.reset}`);
+    // Définition de fonction
+    else if (trimmedLine.startsWith('fonction ') && trimmedLine.includes('(') && trimmedLine.includes(')') && trimmedLine.includes('{')) {
+      try {
+        const funcDef = trimmedLine.match(/fonction\s+(\w+)\s*\((.*?)\)\s*{/);
+        if (funcDef && funcDef[1]) {
+          const funcName = funcDef[1];
+          const funcParams = funcDef[2].split(',').map(p => p.trim()).filter(p => p);
+          
+          definedFunctions[funcName] = {
+            name: funcName,
+            params: funcParams
+          };
+          
+          console.log(`${colors.fg.green}Fonction ${funcName} définie avec ${funcParams.length} paramètre(s)${colors.reset}`);
+          
+          inFunction = true;
+          currentFunction = funcName;
+          bracketCount = 1; // On a déjà une accolade ouvrante
+        }
+      } catch (error) {
+        console.error(`${colors.fg.red}Erreur lors de la définition de fonction: ${error.message}${colors.reset}`);
       }
     }
-    else if (trimmedLine.startsWith('nekRetour(')) {
-      console.log(`${colors.fg.cyan}Valeur retournée${colors.reset}`);
+    // Appel de fonction
+    else if (/^\w+\s*\(.*\);$/.test(trimmedLine)) {
+      try {
+        const funcCall = trimmedLine.match(/(\w+)\s*\((.*?)\);/);
+        if (funcCall && funcCall[1]) {
+          const funcName = funcCall[1];
+          const funcArgs = funcCall[2].split(',').map(a => a.trim()).filter(a => a);
+          
+          if (definedFunctions[funcName]) {
+            console.log(`${colors.fg.green}Appel de la fonction ${funcName} avec ${funcArgs.length} argument(s)${colors.reset}`);
+            console.log(`${colors.fg.cyan}→ Exécution de la fonction ${funcName}${colors.reset}`);
+          } else {
+            console.log(`${colors.fg.yellow}Appel de fonction non définie: ${funcName}${colors.reset}`);
+          }
+        }
+      } catch (error) {
+        console.error(`${colors.fg.red}Erreur lors de l'appel de fonction: ${error.message}${colors.reset}`);
+      }
+    }
+    else if (trimmedLine === '}') {
+      // Accolade fermante isolée (probablement une erreur de syntaxe)
+      console.error(`${colors.fg.red}Accolade fermante inattendue${colors.reset}`);
     }
     else {
-      console.error(`${colors.fg.red}Commande non reconnue: ${trimmedLine}${colors.reset}`);
+      console.log(`${colors.fg.yellow}Instruction non reconnue: ${trimmedLine}${colors.reset}`);
     }
   }
 }

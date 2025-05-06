@@ -1,0 +1,83 @@
+// Exemple de site web en nekoScript
+// Créé le 06/05/2025
+
+// Importer la bibliothèque Web
+nekimporter Web.neko;
+
+// Créer une page web
+neksite.créer("Mon Site nekoScript", "Bienvenue sur mon site créé avec nekoScript!");
+
+// Définir le style global
+nekDefCouleur("body", "#f5f5f5");
+nekDefPolice("body", "Arial, sans-serif");
+nekDefMarge("body", "0 20px");
+
+// Définir le style de l'en-tête
+nekDefCouleur("h1", "#9B59B6");
+nekDefTaille("h1", "36px");
+nekDefPolice("h1", "Nunito, sans-serif");
+nekDefContenu("h1", "Mon Superbe Site nekoScript 🐱");
+
+// Créer une section d'introduction
+nekDefContenu("#intro", "
+  <div class='intro-box'>
+    <h2>Bienvenue sur mon site!</h2>
+    <p>Ce site a été entièrement créé avec nekoScript, un langage de programmation en français.</p>
+    <p>Avec nekoScript, vous pouvez créer facilement:</p>
+    <ul>
+      <li>Des sites web</li>
+      <li>Des bots Discord</li>
+      <li>Des applications</li>
+    </ul>
+    <button id='en-savoir-plus'>En savoir plus</button>
+  </div>
+");
+
+// Styliser la boîte d'introduction
+nekDefCouleur(".intro-box", "#ffffff");
+nekDefMarge(".intro-box", "20px 0");
+nekDefTaille("p", "16px");
+nekDefCouleur("h2", "#3498DB");
+nekDefTaille("button", "16px");
+nekDefCouleur("button", "#ffffff");
+nekDefCouleur("button", "#9B59B6", "background");
+nekDefMarge("button", "10px 0");
+nekDefTaille("button", "padding: 10px 20px");
+
+// Ajouter un événement au bouton
+nekEvenement("#en-savoir-plus", "click", fonction() {
+  nekDefContenu("#info", "
+    <div class='info-box'>
+      <h3>À propos de nekoScript</h3>
+      <p>nekoScript est un langage de programmation en français qui vous permet de créer des sites web, des bots Discord et des applications sans avoir besoin de connaître JavaScript ou d'autres langages complexes.</p>
+      <p>Apprenez-en plus sur <a href='https://nekoscript.fr'>le site officiel de nekoScript</a>.</p>
+    </div>
+  ");
+  
+  // Styliser la nouvelle boîte
+  nekDefCouleur(".info-box", "#f0f0f0");
+  nekDefMarge(".info-box", "20px 0");
+  nekDefTaille(".info-box", "padding: 15px");
+  nekDefCouleur("a", "#9B59B6");
+});
+
+// Ajouter un petit pied de page
+nekDefContenu("footer", "
+  <div class='footer'>
+    <p>Créé avec ❤️ et nekoScript - " plus nekDate() plus "</p>
+  </div>
+");
+
+// Styliser le pied de page
+nekDefCouleur(".footer", "#333333");
+nekDefCouleur(".footer p", "#ffffff");
+nekDefTaille(".footer", "padding: 20px");
+nekDefTaille(".footer", "margin-top: 50px");
+nekDefTaille(".footer p", "text-align: center");
+
+// Fonction pour obtenir la date actuelle
+fonction nekDate() {
+  nekRetour("2025");
+}
+
+neko = ("Site web créé avec succès!");

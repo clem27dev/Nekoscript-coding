@@ -1,0 +1,11 @@
+{
+  "name": "mon-projet",
+  "version": "1.0.0",
+  "description": "Un projet nekoScript",
+  "main": "src/main.neko",
+  "scripts": {
+    "start": "neko-script run src/main.neko",
+    "build": "neko-script build"
+  },
+  "dependencies": {}
+}

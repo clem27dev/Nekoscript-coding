@@ -1,0 +1,16 @@
+// Fichier principal du projet nekoScript
+// Créé le 5/6/2025
+
+neko = ("Bienvenue dans votre projet nekoScript!");
+
+// Exemple d'opération mathématique
+compteneko = 10 plus 5;
+
+// Exemple de définition de fonction
+fonction direBonjour(nom) {
+  neko = ("Bonjour, " plus nom plus "!");
+  nekRetour("Salutations envoyées");
+}
+
+// Appel de la fonction
+direBonjour("Monde");
