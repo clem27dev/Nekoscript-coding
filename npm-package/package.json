@@ -1,5 +1,5 @@
 {
-  "name": "neko-script",
+  "name": "neko-coding",
   "version": "1.0.0",
   "description": "nekoScript - Un langage de programmation en français",
   "main": "lib/index.js",

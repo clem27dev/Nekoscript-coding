@@ -71,6 +71,115 @@ function ensureNekoHome() {
     fs.mkdirSync(path.join(NEKO_HOME, 'packages'), { recursive: true });
     fs.mkdirSync(path.join(NEKO_HOME, 'docs'), { recursive: true });
   }
+  
+  // Make sure there's a package.json for ES modules support
+  const packageJsonPath = path.join(NEKO_HOME, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    fs.writeFileSync(
+      packageJsonPath,
+      JSON.stringify({ "type": "module" }, null, 2),
+      'utf8'
+    );
+  }
+  
+  // Installer les bibliothèques de base si elles sont manquantes
+  const discordNekoPath = path.join(NEKO_HOME, 'libs', 'Discord.neko');
+  const webNekoPath = path.join(NEKO_HOME, 'libs', 'Web.neko');
+  
+  if (!fs.existsSync(discordNekoPath) || !fs.existsSync(webNekoPath)) {
+    console.log(`${colors.fg.yellow}Bibliothèques de base non trouvées, installation...${colors.reset}`);
+    
+    // Contenu de Discord.neko
+    const discordNekoContent = `// Bibliothèque Discord.neko pour les bots Discord
+
+// Configuration du bot
+fonction nekConnection(token) {
+  // Connecte le bot avec le token fourni
+  neko = ("Bot Discord connecté avec succès !");
+  nekRetour(true);
+}
+
+// Définir le statut du bot
+fonction nekStatus(status) {
+  // Applique le statut au bot
+  neko = ("Statut mis à jour : " + status);
+  nekRetour(true);
+}
+
+// Création de commande
+fonction nekCommande(nom, callback) {
+  // Enregistre une nouvelle commande
+  neko = ("Commande " + nom + " enregistrée !");
+  nekRetour(true);
+}
+
+// Créer un message avec embed
+fonction nekEmbed(titre, description, couleur) {
+  // Crée un message embed formaté
+  nekRetour({
+    titre: titre,
+    description: description,
+    couleur: couleur || "#FF6B7A"
+  });
+}
+
+// Exporter les fonctions
+nekoExport = {
+  "nekConnection": nekConnection,
+  "nekStatus": nekStatus,
+  "nekCommande": nekCommande,
+  "nekEmbed": nekEmbed
+};`;
+
+    // Contenu de Web.neko
+    const webNekoContent = `// Bibliothèque Web.neko pour le développement web
+
+// Crée une page web
+fonction nekPage(titre, contenu) {
+  neko = ("Page web créée: " + titre);
+  nekRetour({
+    titre: titre,
+    contenu: contenu
+  });
+}
+
+// Crée un style CSS
+fonction nekStyle(element, propriete, valeur) {
+  neko = ("Style appliqué à l'élément " + element);
+  nekRetour(true);
+}
+
+// Ajoute un événement
+fonction nekEvenement(element, evenement, action) {
+  neko = ("Événement " + evenement + " ajouté à " + element);
+  nekRetour(true);
+}
+
+// Créer un site complet
+fonction nekSite(titre) {
+  neko = ("Site créé: " + titre);
+  nekRetour({
+    titre: titre,
+    pages: []
+  });
+}
+
+// Exporter les fonctions
+nekoExport = {
+  "nekPage": nekPage,
+  "nekStyle": nekStyle,
+  "nekEvenement": nekEvenement,
+  "nekSite": nekSite
+};`;
+
+    // Écrire les bibliothèques
+    fs.writeFileSync(discordNekoPath, discordNekoContent, 'utf8');
+    fs.writeFileSync(webNekoPath, webNekoContent, 'utf8');
+    
+    console.log(`${colors.fg.green}Bibliothèques de base installées avec succès!${colors.reset}`);
+  }
+  
+  return NEKO_HOME;
 }
 
 // Interprète le code nekoScript
