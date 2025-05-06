@@ -5,6 +5,8 @@ import path from 'path';
 import { execSync } from 'child_process';
 import readline from 'readline';
 import { fileURLToPath } from 'url';
+// Importer les fonctions de construction de build-utils.js
+import { compileNekoToJs, buildNpmPackage, buildExecutable } from './build-utils.js';
 
 // Pour obtenir le __dirname en module ES
 const __filename = fileURLToPath(import.meta.url);
@@ -845,7 +847,49 @@ function main() {
       break;
     
     case 'build':
-      console.log(`${colors.fg.yellow}La commande 'build' n'est pas encore implémentée.${colors.reset}`);
+      // Options de build: js, npm, app
+      const buildType = args[1] || 'js';
+      const buildTarget = args[2];
+      
+      if (!buildTarget) {
+        console.error(`${colors.fg.red}Erreur: Vous devez spécifier un fichier ou un projet à compiler.${colors.reset}`);
+        console.log(`${colors.fg.cyan}Utilisation:${colors.reset}`);
+        console.log(`  neko-script build js <fichier.neko>       # Compile un fichier .neko en JavaScript`);
+        console.log(`  neko-script build npm <dossier>           # Construit un package npm à partir d'un projet`);
+        console.log(`  neko-script build app <fichier.neko>      # Crée une application exécutable`);
+        break;
+      }
+      
+      switch (buildType) {
+        case 'js':
+          // Compiler un fichier .neko en JavaScript
+          const jsOutputPath = buildTarget.replace('.neko', '.js');
+          compileNekoToJs(buildTarget, jsOutputPath);
+          break;
+        
+        case 'npm':
+          // Construire un package npm à partir d'un projet
+          buildNpmPackage(buildTarget);
+          break;
+        
+        case 'app':
+          // Créer une application exécutable
+          const appName = path.basename(buildTarget, '.neko');
+          const outputDir = path.join(process.cwd(), 'dist');
+          
+          // Créer le dossier dist s'il n'existe pas
+          if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+          }
+          
+          const appOutputPath = path.join(outputDir, appName);
+          buildExecutable(buildTarget, appOutputPath);
+          break;
+        
+        default:
+          console.error(`${colors.fg.red}Type de build non reconnu: ${buildType}${colors.reset}`);
+          console.log(`${colors.fg.cyan}Types disponibles: js, npm, app${colors.reset}`);
+      }
       break;
     
     case 'version':
