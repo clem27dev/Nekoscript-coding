@@ -1,6 +1,9 @@
 // DiscordAPI.neko - Package pour l'API Discord officielle
 // Ce package permet de créer facilement des bots Discord en nekoScript
-// en utilisant l'API Discord officielle (via JavaScript sous le capot)
+// en utilisant l'API Discord.js officielle
+
+// Importation interne (NOTE: Ce commentaire est traité spécialement par nekoScript)
+// NEKO_IMPORT: import discordBridge from '../bin/discord-bridge.js';
 
 // Variables globales
 variable monClient = null;
