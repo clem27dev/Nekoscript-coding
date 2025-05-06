@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 235 75% 8%;
+    --foreground: 0 0% 100%;
+
+    --card: 233 22% 21%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 233 22% 21%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 352 100% 71%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 262 100% 65%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 234 19% 27%;
+    --muted-foreground: 240 5% 84%;
+
+    --accent: 42 100% 70%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 234 19% 27%;
+    --input: 233 22% 21%;
+    --ring: 262 100% 65%;
+
+    --radius: 0.5rem;
+
+    /* Chart colors */
+    --chart-1: var(--primary);
+    --chart-2: var(--secondary);
+    --chart-3: var(--accent);
+    --chart-4: 193 95% 54%;
+    --chart-5: 122 39% 49%;
+
+    /* Sidebar colors */
+    --sidebar-background: 233 22% 21%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 352 100% 71%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 42 100% 70%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 234 19% 27%;
+    --sidebar-ring: 262 100% 65%;
+  }
+  
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .editor-line-numbers {
+    user-select: none;
+  }
+
+  .token-keyword {
+    @apply text-primary;
+  }
+
+  .token-function {
+    @apply text-blue-400;
+  }
+
+  .token-string {
+    @apply text-accent;
+  }
+
+  .token-number {
+    @apply text-secondary;
+  }
+
+  .token-operator {
+    @apply text-primary;
+  }
+
+  .token-comment {
+    @apply text-muted-foreground;
+  }
+
+  .selected-file {
+    @apply bg-secondary/20;
+  }
+
+  .tab-active {
+    @apply border-b-2 border-secondary;
+  }
+}
