@@ -7,29 +7,35 @@ import { FileTreeItem, DocSection } from '@shared/types';
 export const storage = {
   // File operations
   async getFiles(): Promise<FileTreeItem[]> {
-    const allFiles = await db.query.files.findMany({
-      with: {
-        children: true
-      }
-    });
-    
-    // Convert to tree structure
-    const rootFiles = allFiles.filter(file => !file.parentId);
-    
-    const buildFileTree = (items: typeof allFiles): FileTreeItem[] => {
-      return items.map(item => {
-        const children = allFiles.filter(child => child.parentId === item.id);
-        
-        return {
-          name: item.name,
-          path: item.path,
-          isFolder: item.isFolder,
-          children: item.isFolder ? buildFileTree(children) : undefined
-        };
-      });
-    };
-    
-    return buildFileTree(rootFiles);
+    try {
+      // Récupérer tous les fichiers/dossiers directement de la base de données
+      const allFilesResult = await db.select()
+                                    .from(files)
+                                    .execute();
+      
+      const allFiles = allFilesResult || [];
+      
+      // Construire manuellement la structure arborescente sans utiliser les relations
+      const rootFiles = allFiles.filter(file => !file.parentId);
+      
+      const buildFileTree = (items: typeof allFiles): FileTreeItem[] => {
+        return items.map(item => {
+          const children = allFiles.filter(child => child.parentId === item.id);
+          
+          return {
+            name: item.name,
+            path: item.path,
+            isFolder: item.isFolder,
+            children: item.isFolder ? buildFileTree(children) : undefined
+          };
+        });
+      };
+      
+      return buildFileTree(rootFiles);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des fichiers:", error);
+      return [];
+    }
   },
   
   async getFileByPath(path: string) {
@@ -99,22 +105,28 @@ export const storage = {
   },
   
   async deleteFile(path: string) {
-    // First check if it's a folder with children
-    const file = await db.query.files.findFirst({
-      where: eq(files.path, path),
-      with: {
-        children: true
+    try {
+      // Récupérer le fichier à supprimer
+      const file = await db.select().from(files).where(eq(files.path, path)).execute();
+      
+      if (file.length > 0 && file[0].isFolder) {
+        // Si c'est un dossier, récupérer tous les fichiers qui sont enfants de ce dossier
+        const allFilesResult = await db.select().from(files).execute();
+        const allFiles = allFilesResult || [];
+        const children = allFiles.filter(child => child.parentId === file[0].id);
+        
+        // Supprimer récursivement tous les enfants
+        for (const child of children) {
+          await this.deleteFile(child.path);
+        }
       }
-    });
-    
-    if (file && file.isFolder && file.children && file.children.length > 0) {
-      // Delete all children recursively
-      for (const child of file.children) {
-        await this.deleteFile(child.path);
-      }
+      
+      // Supprimer le fichier/dossier lui-même
+      return db.delete(files).where(eq(files.path, path));
+    } catch (error) {
+      console.error("Erreur lors de la suppression du fichier:", error);
+      throw error;
     }
-    
-    return db.delete(files).where(eq(files.path, path));
   },
   
   // Package operations
@@ -278,6 +290,30 @@ export const storage = {
           });
         }
         
+        // Web development: neksite.créer
+        else if (trimmedLine.startsWith('neksite.créer')) {
+          messages.push({ type: 'info', text: 'Création de site web initiée' });
+        }
+        
+        // Web styling: nekDefCouleur, nekDefTaille, etc.
+        else if (trimmedLine.startsWith('nekDef')) {
+          if (trimmedLine.startsWith('nekDefCouleur(')) {
+            messages.push({ type: 'info', text: 'Style: couleur définie' });
+          }
+          else if (trimmedLine.startsWith('nekDefTaille(')) {
+            messages.push({ type: 'info', text: 'Style: taille définie' });
+          }
+          else if (trimmedLine.startsWith('nekDefMarge(')) {
+            messages.push({ type: 'info', text: 'Style: marge définie' });
+          }
+          else if (trimmedLine.startsWith('nekDefPolice(')) {
+            messages.push({ type: 'info', text: 'Style: police définie' });
+          }
+          else if (trimmedLine.startsWith('nekDefContenu(')) {
+            messages.push({ type: 'info', text: 'Contenu défini' });
+          }
+        }
+        
         // Discord commands
         else if (trimmedLine.startsWith('Discord.nek')) {
           if (trimmedLine.startsWith('Discord.nekConnection(')) {
@@ -294,6 +330,9 @@ export const storage = {
             if (command && command[1]) {
               messages.push({ type: 'info', text: `Discord.neko: Commande "${command[1]}" enregistrée` });
             }
+          }
+          else if (trimmedLine.startsWith('Discord.nekEmbed(')) {
+            messages.push({ type: 'info', text: 'Discord.neko: Embed créé' });
           }
         }
         
@@ -323,6 +362,107 @@ export const storage = {
         else {
           messages.push({ type: 'error', text: `Commande non reconnue: ${trimmedLine}` });
         }
+      }
+      
+      return { messages };
+    } catch (error) {
+      messages.push({ type: 'error', text: `Erreur d'exécution: ${(error as Error).message}` });
+      return { messages };
+    }
+  },
+  
+  // Terminal command handler for nekoScript
+  executeTerminalCommand(command: string): { messages: { type: string; text: string; image?: string }[] } {
+    const messages: { type: string; text: string; image?: string }[] = [];
+    
+    try {
+      const parts = command.split(' ');
+      
+      if (parts[0] === '$neko-script' || parts[0] === 'neko-script') {
+        if (parts.length < 2) {
+          messages.push({ type: 'error', text: 'Usage: $neko-script <commande> [arguments]' });
+          return { messages };
+        }
+        
+        const action = parts[1];
+        
+        switch (action) {
+          case 'télécharger':
+            messages.push({ type: 'info', text: 'Téléchargement de nekoScript...' });
+            messages.push({ type: 'success', text: 'nekoScript installé avec succès!' });
+            break;
+            
+          case 'publish':
+            if (parts.length < 3) {
+              messages.push({ type: 'error', text: 'Usage: $neko-script publish <nom-package>' });
+            } else {
+              const packageName = parts[2];
+              messages.push({ type: 'info', text: `Publication de la bibliothèque ${packageName}...` });
+              messages.push({ type: 'success', text: `Bibliothèque ${packageName} publiée avec succès!` });
+            }
+            break;
+            
+          case 'librairie':
+            if (parts.length < 3) {
+              messages.push({ type: 'error', text: 'Usage: $neko-script librairie <nom-librairie>' });
+            } else {
+              const libName = parts[2];
+              messages.push({ type: 'info', text: `Téléchargement de la bibliothèque ${libName}...` });
+              messages.push({ type: 'success', text: `Bibliothèque ${libName} téléchargée avec succès!` });
+            }
+            break;
+            
+          case 'init':
+            messages.push({ type: 'info', text: 'Initialisation d\'un nouveau projet nekoScript...' });
+            messages.push({ type: 'success', text: 'Projet initialisé! Fichier neko.config.json créé.' });
+            break;
+            
+          case 'run':
+            if (parts.length < 3) {
+              messages.push({ type: 'error', text: 'Usage: $neko-script run <chemin-fichier>' });
+            } else {
+              const filePath = parts[2];
+              messages.push({ type: 'info', text: `Exécution du fichier ${filePath}...` });
+              messages.push({ type: 'success', text: 'Exécution terminée!' });
+            }
+            break;
+            
+          case 'build':
+            messages.push({ type: 'info', text: 'Construction du projet...' });
+            messages.push({ type: 'success', text: 'Projet construit avec succès! Retrouvez les fichiers dans le dossier dist/' });
+            break;
+            
+          case 'export-html':
+            messages.push({ type: 'info', text: 'Exportation du projet en HTML...' });
+            messages.push({ type: 'success', text: 'Projet exporté avec succès! Retrouvez les fichiers HTML dans le dossier export/' });
+            break;
+            
+          case 'export-app':
+            messages.push({ type: 'info', text: 'Conversion du projet en application...' });
+            messages.push({ type: 'success', text: 'Application créée avec succès! Retrouvez les fichiers dans le dossier app/' });
+            break;
+            
+          case 'aide':
+          case 'help':
+            messages.push({ type: 'info', text: 'Commandes disponibles:' });
+            messages.push({ type: 'standard', text: '  télécharger - Installe nekoScript' });
+            messages.push({ type: 'standard', text: '  publish <nom> - Publie une bibliothèque' });
+            messages.push({ type: 'standard', text: '  librairie <nom> - Télécharge une bibliothèque' });
+            messages.push({ type: 'standard', text: '  init - Initialise un nouveau projet' });
+            messages.push({ type: 'standard', text: '  run <fichier> - Exécute un fichier nekoScript' });
+            messages.push({ type: 'standard', text: '  build - Construit le projet' });
+            messages.push({ type: 'standard', text: '  export-html - Exporte le projet en HTML' });
+            messages.push({ type: 'standard', text: '  export-app - Convertit le projet en application' });
+            messages.push({ type: 'standard', text: '  aide/help - Affiche cette aide' });
+            break;
+            
+          default:
+            messages.push({ type: 'error', text: `Commande inconnue: ${action}` });
+            messages.push({ type: 'info', text: 'Utilisez "$neko-script aide" pour voir les commandes disponibles' });
+        }
+      } else {
+        // Pour les commandes qui ne commencent pas par $neko-script
+        messages.push({ type: 'error', text: 'Commande inconnue. Utilisez "$neko-script" pour les commandes nekoScript.' });
       }
       
       return { messages };

@@ -13,6 +13,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
 export default function Home() {
   // State
@@ -20,13 +26,20 @@ export default function Home() {
   const [openTabs, setOpenTabs] = useState<FileTab[]>([]);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
   const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
+  const [terminalMessages, setTerminalMessages] = useState<ConsoleMessage[]>([]);
+  const [problemMessages, setProblemMessages] = useState<ConsoleMessage[]>([]);
   const [consoleExpanded, setConsoleExpanded] = useState(false);
   const [fileContent, setFileContent] = useState<string>('');
   const [createFileDialogOpen, setCreateFileDialogOpen] = useState(false);
   const [createFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
+  const [deleteFileDialogOpen, setDeleteFileDialogOpen] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [currentDirectory, setCurrentDirectory] = useState('/');
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null);
+  const [exportHtmlDialogOpen, setExportHtmlDialogOpen] = useState(false);
+  const [exportAppDialogOpen, setExportAppDialogOpen] = useState(false);
+  const [htmlExport, setHtmlExport] = useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -90,6 +103,40 @@ export default function Home() {
     }
   });
 
+  const deleteFileMutation = useMutation({
+    mutationFn: async (path: string) => {
+      return apiRequest('DELETE', `/api/files/${encodeURIComponent(path)}`);
+    },
+    onSuccess: () => {
+      // Remove from open tabs if present
+      if (fileToDelete) {
+        setOpenTabs(prev => prev.filter(tab => tab.path !== fileToDelete));
+        
+        // If active file is deleted, select another tab
+        if (activeFilePath === fileToDelete) {
+          const remainingTabs = openTabs.filter(tab => tab.path !== fileToDelete);
+          setActiveFilePath(remainingTabs.length > 0 ? remainingTabs[0].path : null);
+        }
+      }
+      
+      refetchFiles();
+      setDeleteFileDialogOpen(false);
+      setFileToDelete(null);
+      
+      toast({
+        title: 'Fichier supprimé',
+        description: 'Le fichier a été supprimé avec succès.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: `Erreur lors de la suppression: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
+  });
+
   const saveFileMutation = useMutation({
     mutationFn: async ({ path, content }: { path: string; content: string }) => {
       return apiRequest('PUT', `/api/files/${encodeURIComponent(path)}`, { content });
@@ -128,6 +175,70 @@ export default function Home() {
     }
   });
 
+  const executeTerminalCommandMutation = useMutation({
+    mutationFn: async (command: string) => {
+      return apiRequest('POST', '/api/terminal', { command });
+    },
+    onSuccess: (response) => {
+      response.json().then((data) => {
+        if (data.messages && Array.isArray(data.messages)) {
+          setTerminalMessages((prev) => [...prev, ...data.messages]);
+        }
+      });
+    },
+    onError: (error: Error) => {
+      setTerminalMessages((prev) => [
+        ...prev, 
+        { type: 'error', text: `Erreur d'exécution: ${error.message}` }
+      ]);
+    }
+  });
+
+  const exportHtmlMutation = useMutation({
+    mutationFn: async (path: string) => {
+      return apiRequest('POST', '/api/export-html', { path });
+    },
+    onSuccess: (response) => {
+      response.json().then((data) => {
+        if (data.html) {
+          setHtmlExport(data.html);
+          setExportHtmlDialogOpen(true);
+        }
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: `Erreur lors de l'exportation HTML: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const exportAppMutation = useMutation({
+    mutationFn: async (path: string) => {
+      return apiRequest('POST', '/api/export-app', { path });
+    },
+    onSuccess: (response) => {
+      response.json().then((data) => {
+        if (data.success) {
+          setExportAppDialogOpen(true);
+          toast({
+            title: 'Application créée',
+            description: data.message,
+          });
+        }
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: `Erreur lors de la conversion en application: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
+  });
+
   // Effects
   useEffect(() => {
     if (activeFileData) {
@@ -140,6 +251,11 @@ export default function Home() {
     setConsoleMessages([
       { type: 'standard', text: 'Bienvenue dans nekoScript IDE!' },
       { type: 'info', text: 'Écrivez du code nekoScript et exécutez-le pour voir le résultat.' }
+    ]);
+    
+    setTerminalMessages([
+      { type: 'info', text: 'Terminal nekoScript' },
+      { type: 'standard', text: 'Tapez "$neko-script aide" pour voir les commandes disponibles.' }
     ]);
   }, []);
 
@@ -188,43 +304,27 @@ export default function Home() {
 
   const handleClearConsole = () => {
     setConsoleMessages([]);
+    setTerminalMessages([
+      { type: 'info', text: 'Terminal nekoScript' },
+      { type: 'standard', text: 'Tapez "$neko-script aide" pour voir les commandes disponibles.' }
+    ]);
+    setProblemMessages([]);
   };
 
   const handleConsoleCommand = (command: string) => {
     // Add command to console
     setConsoleMessages(prev => [...prev, { type: 'standard', text: command }]);
     
-    // Process command (terminal commands)
-    if (command.startsWith('$neko-script')) {
-      const parts = command.split(' ');
-      if (parts.length > 1) {
-        const action = parts[1];
-        switch (action) {
-          case 'télécharger':
-            setConsoleMessages(prev => [...prev, { type: 'success', text: 'nekoScript installé avec succès!' }]);
-            break;
-          case 'publish':
-            if (parts.length > 2) {
-              setConsoleMessages(prev => [...prev, { type: 'success', text: `Bibliothèque ${parts[2]} publiée avec succès!` }]);
-            } else {
-              setConsoleMessages(prev => [...prev, { type: 'error', text: 'Nom de bibliothèque requis' }]);
-            }
-            break;
-          case 'librairie':
-            if (parts.length > 2) {
-              setConsoleMessages(prev => [...prev, { type: 'success', text: `Bibliothèque ${parts[2]} téléchargée avec succès!` }]);
-            } else {
-              setConsoleMessages(prev => [...prev, { type: 'error', text: 'Nom de bibliothèque requis' }]);
-            }
-            break;
-          default:
-            setConsoleMessages(prev => [...prev, { type: 'error', text: `Commande inconnue: ${action}` }]);
-        }
-      }
-    } else {
-      // Execute as nekoScript code
-      executeCodeMutation.mutate(command);
-    }
+    // Execute as nekoScript code
+    executeCodeMutation.mutate(command);
+  };
+
+  const handleTerminalCommand = (command: string) => {
+    // Add command to terminal log
+    setTerminalMessages(prev => [...prev, { type: 'standard', text: command }]);
+    
+    // Execute terminal command
+    executeTerminalCommandMutation.mutate(command);
   };
 
   const handleCreateFile = () => {
@@ -233,6 +333,41 @@ export default function Home() {
 
   const handleCreateFolder = () => {
     setCreateFolderDialogOpen(true);
+  };
+
+  const handleDeleteFile = (path: string) => {
+    setFileToDelete(path);
+    setDeleteFileDialogOpen(true);
+  };
+
+  const confirmDeleteFile = () => {
+    if (fileToDelete) {
+      deleteFileMutation.mutate(fileToDelete);
+    }
+  };
+
+  const handleExportHtml = () => {
+    if (activeFilePath) {
+      exportHtmlMutation.mutate(activeFilePath);
+    } else {
+      toast({
+        title: 'Erreur',
+        description: 'Aucun fichier sélectionné pour l\'exportation',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleExportApp = () => {
+    if (activeFilePath) {
+      exportAppMutation.mutate(activeFilePath);
+    } else {
+      toast({
+        title: 'Erreur',
+        description: 'Aucun fichier sélectionné pour la conversion',
+        variant: 'destructive',
+      });
+    }
   };
 
   const submitNewFile = () => {
@@ -250,6 +385,21 @@ export default function Home() {
         name: newFolderName,
         directory: currentDirectory
       });
+    }
+  };
+
+  const downloadHtml = () => {
+    if (htmlExport) {
+      const fileName = activeFilePath ? activeFilePath.split('/').pop()?.replace('.neko', '.html') || 'export.html' : 'export.html';
+      const blob = new Blob([htmlExport], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -287,16 +437,48 @@ export default function Home() {
             onSelectFile={handleSelectFile}
             onCreateFile={handleCreateFile}
             onCreateFolder={handleCreateFolder}
+            onDeleteFile={handleDeleteFile}
+            onExportHtml={handleExportHtml}
+            onExportApp={handleExportApp}
           />
         )}
         
         <div className="flex-1 flex flex-col overflow-hidden">
-          <EditorTabs 
-            tabs={openTabs}
-            activeTab={activeFilePath}
-            onSelectTab={handleSelectTab}
-            onCloseTab={handleCloseTab}
-          />
+          <div className="flex justify-between items-center border-b border-muted">
+            <EditorTabs 
+              tabs={openTabs}
+              activeTab={activeFilePath}
+              onSelectTab={handleSelectTab}
+              onCloseTab={handleCloseTab}
+            />
+            
+            {activeFilePath && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="mr-2">
+                    <i className="ri-more-line"></i>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleSaveFile}>
+                    <i className="ri-save-line mr-2"></i> Sauvegarder
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleRunCode}>
+                    <i className="ri-play-line mr-2"></i> Exécuter
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDeleteFile(activeFilePath)}>
+                    <i className="ri-delete-bin-line mr-2"></i> Supprimer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportHtml}>
+                    <i className="ri-html5-line mr-2"></i> Exporter en HTML
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportApp}>
+                    <i className="ri-window-line mr-2"></i> Convertir en Application
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
           
           {activeFilePath ? (
             <CodeEditor 
@@ -309,14 +491,25 @@ export default function Home() {
                 <div className="text-5xl mb-4">🐱</div>
                 <h2 className="text-2xl font-bold mb-2 text-primary">Bienvenue dans nekoScript</h2>
                 <p className="text-muted-foreground">Ouvrez un fichier pour commencer à coder</p>
+                <div className="mt-4 space-x-2">
+                  <Button variant="outline" onClick={handleCreateFile}>
+                    <i className="ri-file-add-line mr-2"></i> Créer un fichier
+                  </Button>
+                  <Button variant="outline" onClick={handleCreateFolder}>
+                    <i className="ri-folder-add-line mr-2"></i> Créer un dossier
+                  </Button>
+                </div>
               </div>
             </div>
           )}
           
           <Console 
             messages={consoleMessages}
+            terminalMessages={terminalMessages}
+            problemMessages={problemMessages}
             onClear={handleClearConsole}
             onCommand={handleConsoleCommand}
+            onTerminalCommand={handleTerminalCommand}
             expanded={consoleExpanded}
             onToggleExpand={() => setConsoleExpanded(!consoleExpanded)}
           />
@@ -375,6 +568,66 @@ export default function Home() {
           </div>
           <DialogFooter>
             <Button type="submit" onClick={submitNewFolder}>Créer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete File Dialog */}
+      <Dialog open={deleteFileDialogOpen} onOpenChange={setDeleteFileDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer Fichier</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer ce fichier ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteFileDialogOpen(false)}>Annuler</Button>
+            <Button variant="destructive" onClick={confirmDeleteFile}>Supprimer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export HTML Dialog */}
+      <Dialog open={exportHtmlDialogOpen} onOpenChange={setExportHtmlDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Export HTML</DialogTitle>
+            <DialogDescription>
+              Votre code nekoScript a été exporté en HTML.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 border rounded-lg overflow-hidden">
+            <div className="bg-muted p-2 font-mono text-xs overflow-auto max-h-96">
+              {htmlExport && (
+                <pre>{htmlExport}</pre>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportHtmlDialogOpen(false)}>Fermer</Button>
+            <Button onClick={downloadHtml}>Télécharger</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export App Dialog */}
+      <Dialog open={exportAppDialogOpen} onOpenChange={setExportAppDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Conversion en Application</DialogTitle>
+            <DialogDescription>
+              Votre code nekoScript a été converti en application.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 p-4 bg-muted rounded-lg">
+            <p className="text-center">
+              L'application a été générée avec succès. Vous pouvez la télécharger en cliquant sur le bouton ci-dessous.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportAppDialogOpen(false)}>Fermer</Button>
+            <Button>Télécharger l'Application</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

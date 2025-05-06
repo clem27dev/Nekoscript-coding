@@ -6,16 +6,22 @@ import { ConsoleMessage } from '@shared/types';
 
 interface ConsoleProps {
   messages: ConsoleMessage[];
+  terminalMessages: ConsoleMessage[];
+  problemMessages: ConsoleMessage[];
   onClear: () => void;
   onCommand: (command: string) => void;
+  onTerminalCommand: (command: string) => void;
   expanded: boolean;
   onToggleExpand: () => void;
 }
 
 export const Console: React.FC<ConsoleProps> = ({
   messages,
+  terminalMessages,
+  problemMessages,
   onClear,
   onCommand,
+  onTerminalCommand,
   expanded,
   onToggleExpand,
 }) => {
@@ -32,12 +38,16 @@ export const Console: React.FC<ConsoleProps> = ({
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
       }
     }
-  }, [messages]);
+  }, [messages, terminalMessages, problemMessages, activeTab]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      onCommand(input);
+      if (activeTab === 'terminal') {
+        onTerminalCommand(input);
+      } else {
+        onCommand(input);
+      }
       setInput('');
     }
   };
@@ -54,6 +64,21 @@ export const Console: React.FC<ConsoleProps> = ({
         return <div className="text-primary mr-2">{'>'}</div>;
     }
   };
+
+  // Détermine les messages à afficher en fonction de l'onglet actif
+  const displayMessages = activeTab === 'terminal' 
+    ? terminalMessages 
+    : activeTab === 'problems' 
+      ? problemMessages 
+      : messages;
+
+  // Préfixe pour l'invite de commande
+  const commandPrefix = activeTab === 'terminal' ? '$ ' : '> ';
+
+  // Placeholder en fonction de l'onglet
+  const inputPlaceholder = activeTab === 'terminal' 
+    ? 'Entrez une commande terminal (ex: $neko-script aide)...' 
+    : 'Entrez une commande nekoScript...';
 
   return (
     <div className={`border-t border-muted bg-card overflow-hidden flex flex-col ${expanded ? 'h-1/2' : 'h-64'}`}>
@@ -105,10 +130,10 @@ export const Console: React.FC<ConsoleProps> = ({
 
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="p-4 font-mono text-sm">
-          {messages.map((message, index) => (
+          {displayMessages.map((message, index) => (
             <div key={index} className="flex items-start mb-2">
               {getMessageIcon(message.type)}
-              <div>
+              <div className="flex-1 break-words">
                 <div>{message.text}</div>
                 {message.image && (
                   <img 
@@ -122,15 +147,34 @@ export const Console: React.FC<ConsoleProps> = ({
           ))}
 
           <form onSubmit={handleSubmit} className="flex items-start">
-            <div className="text-white mr-2">$</div>
+            <div className="text-white mr-2">{commandPrefix}</div>
             <div className="relative w-full">
               <Input
                 ref={inputRef}
                 type="text"
                 className="w-full bg-transparent border-none outline-none"
-                placeholder="Entrez une commande..."
+                placeholder={inputPlaceholder}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  // Ajouter la complétion automatique des commandes
+                  if (e.key === 'Tab' && activeTab === 'terminal' && input.startsWith('$neko-script')) {
+                    e.preventDefault();
+                    // Suggestions de commandes
+                    const commands = ['télécharger', 'publish', 'librairie', 'init', 'run', 'build', 'export-html', 'export-app', 'aide'];
+                    // Trouver une commande qui commence par ce qu'a tapé l'utilisateur après $neko-script
+                    const parts = input.split(' ');
+                    if (parts.length === 1) {
+                      setInput('$neko-script ');
+                    } else if (parts.length === 2) {
+                      const partialCommand = parts[1];
+                      const suggestion = commands.find(cmd => cmd.startsWith(partialCommand));
+                      if (suggestion) {
+                        setInput(`$neko-script ${suggestion} `);
+                      }
+                    }
+                  }
+                }}
               />
             </div>
           </form>

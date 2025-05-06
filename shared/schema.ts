@@ -45,9 +45,12 @@ export const documentation = pgTable("documentation", {
 export const filesRelations = relations(files, ({ one, many }) => ({
   parent: one(files, {
     fields: [files.parentId],
-    references: [files.id]
+    references: [files.id],
+    relationName: "parent_child"
   }),
-  children: many(files)
+  children: many(files, {
+    relationName: "parent_child"
+  })
 }));
 
 // Schemas

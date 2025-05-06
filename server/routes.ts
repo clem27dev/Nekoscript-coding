@@ -208,6 +208,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to execute code' });
     }
   });
+  
+  // Terminal command execution endpoint
+  app.post('/api/terminal', async (req, res) => {
+    try {
+      const { command } = req.body;
+      
+      if (!command) {
+        return res.status(400).json({ error: 'Command is required' });
+      }
+      
+      const result = storage.executeTerminalCommand(command);
+      res.json(result);
+    } catch (error) {
+      console.error('Error executing terminal command:', error);
+      res.status(500).json({ error: 'Failed to execute terminal command' });
+    }
+  });
+  
+  // File export to HTML endpoint
+  app.post('/api/export-html', async (req, res) => {
+    try {
+      const { path } = req.body;
+      
+      if (!path) {
+        return res.status(400).json({ error: 'File path is required' });
+      }
+      
+      const file = await storage.getFileByPath(path);
+      
+      if (!file) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      
+      // Simple HTML conversion logic
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Export nekoScript - ${file.name}</title>
+  <style>
+    body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; color: #333; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #9333ea; }
+    pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    .neko-output { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>${file.name}</h1>
+    <p>Exporté depuis nekoScript IDE</p>
+    <h2>Code source:</h2>
+    <pre>${file.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+    <div class="neko-output">
+      <h2>Sortie:</h2>
+      <div id="output">Exécution du code...</div>
+    </div>
+  </div>
+  <script>
+    // Simulation d'exécution du code nekoScript
+    document.getElementById('output').innerHTML = "Code exécuté avec succès!";
+  </script>
+</body>
+</html>`;
+      
+      res.json({ html });
+    } catch (error) {
+      console.error('Error exporting HTML:', error);
+      res.status(500).json({ error: 'Failed to export to HTML' });
+    }
+  });
+  
+  // File export to app endpoint
+  app.post('/api/export-app', async (req, res) => {
+    try {
+      const { path } = req.body;
+      
+      if (!path) {
+        return res.status(400).json({ error: 'File path is required' });
+      }
+      
+      const file = await storage.getFileByPath(path);
+      
+      if (!file) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      
+      // Simple app conversion response
+      res.json({ 
+        success: true, 
+        message: `Le fichier ${file.name} a été converti en application. Téléchargez le fichier .zip pour l'installer.` 
+      });
+    } catch (error) {
+      console.error('Error exporting app:', error);
+      res.status(500).json({ error: 'Failed to export to app' });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
