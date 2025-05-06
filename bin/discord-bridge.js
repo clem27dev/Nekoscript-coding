@@ -43,7 +43,7 @@ class DiscordBridge {
   // Se connecter à Discord avec un token
   async login(token) {
     if (!this.client) {
-      console.error('Client Discord non initialisé. Utilisez init() d'abord.');
+      console.error('Client Discord non initialisé. Utilisez init() dabord.');
       return false;
     }
 
