@@ -1,0 +1,135 @@
+// Exemple d'un bot Discord utilisant DiscordAPI.neko
+// Ce bot montre comment créer un bot Discord complet avec nekoScript
+
+// Importer le package DiscordAPI
+nekimporter DiscordAPI.neko;
+
+// Configuration du bot
+variable TOKEN = "VOTRE_TOKEN_DISCORD"; // Remplacez par votre vrai token Discord
+variable PREFIX = "!";
+
+// Initialiser le bot avec notre token et préfixe personnalisé
+DiscordAPI.nekInitialiser(TOKEN, {
+  "prefixe": PREFIX
+});
+
+// Connecter le bot à Discord
+DiscordAPI.nekConnecter();
+
+// Définir le statut du bot (ce que le bot est en train de faire)
+DiscordAPI.nekDefinirStatut("joue", "avec nekoScript");
+
+// Afficher un message de bienvenue dans la console
+neko = ("Bot démarré avec le préfixe: " plus PREFIX);
+neko = ("Tapez !aide pour voir les commandes disponibles");
+
+// Définir une commande simple: !bonjour
+DiscordAPI.nekCommande("bonjour", "Dit bonjour à l'utilisateur", fonction(message) {
+  // Répondre au message avec une salutation
+  message.repondre("Bonjour, " plus message.auteur.tag plus " ! 👋");
+  
+  // Ajouter une réaction d'emoji au message original
+  message.reagir("👋");
+});
+
+// Définir une commande d'aide: !aide
+DiscordAPI.nekCommande("aide", "Affiche la liste des commandes disponibles", fonction(message) {
+  // Créer un embed pour l'aide
+  const embed = DiscordAPI.nekEmbed(
+    "📚 Aide du Bot",
+    "Voici la liste des commandes disponibles:",
+    "#3498db",
+    [
+      { "nom": PREFIX plus "bonjour", "valeur": "Dit bonjour à l'utilisateur" },
+      { "nom": PREFIX plus "aide", "valeur": "Affiche ce message d'aide" },
+      { "nom": PREFIX plus "info", "valeur": "Affiche des informations sur le serveur" },
+      { "nom": PREFIX plus "dé", "valeur": "Lance un dé à 6 faces" },
+      { "nom": PREFIX plus "sondage", "valeur": "Crée un sondage simple" }
+    ]
+  );
+  
+  // Envoyer l'embed en réponse
+  message.repondre(embed);
+});
+
+// Commande pour afficher des informations sur le serveur: !info
+DiscordAPI.nekCommande("info", "Affiche des informations sur le serveur", fonction(message) {
+  // Récupérer les informations du serveur
+  const serveur = DiscordAPI.nekInfoServeur();
+  
+  // Créer un embed avec les informations
+  const embed = DiscordAPI.nekEmbed(
+    "ℹ️ Informations sur le serveur",
+    "Voici les informations sur ce serveur Discord:",
+    "#2ecc71",
+    [
+      { "nom": "Nom", "valeur": serveur.nom },
+      { "nom": "ID", "valeur": serveur.id },
+      { "nom": "Nombre de membres", "valeur": serveur.membres.toString() },
+      { "nom": "Propriétaire", "valeur": serveur.owner }
+    ]
+  );
+  
+  // Envoyer l'embed en réponse
+  message.repondre(embed);
+});
+
+// Commande pour lancer un dé: !dé
+DiscordAPI.nekCommande("dé", "Lance un dé à 6 faces", fonction(message) {
+  // Générer un nombre aléatoire entre 1 et 6
+  const resultat = Math.floor(Math.random() * 6) + 1;
+  
+  // Envoyer le résultat
+  message.repondre("🎲 Vous avez obtenu un " plus resultat plus " !");
+});
+
+// Commande pour créer un sondage: !sondage
+DiscordAPI.nekCommande("sondage", "Crée un sondage simple", fonction(message) {
+  // Créer un embed pour le sondage
+  const embed = DiscordAPI.nekEmbed(
+    "📊 Sondage",
+    "Réagissez avec 👍 pour Oui ou 👎 pour Non",
+    "#e74c3c"
+  );
+  
+  // Envoyer l'embed en réponse
+  message.repondre(embed);
+  
+  // Ajouter les réactions de vote
+  // Dans un vrai bot, on ajouterait ces réactions au message envoyé
+  neko = ("Réactions 👍 et 👎 ajoutées au sondage");
+});
+
+// Gérer les réactions aux messages
+DiscordAPI.nekSurReaction(fonction(reaction) {
+  // Vérifier l'emoji de la réaction
+  si (reaction.emoji.nom est égal à "👍") {
+    neko = ("Quelqu'un a voté Oui");
+  } sinon si (reaction.emoji.nom est égal à "👎") {
+    neko = ("Quelqu'un a voté Non");
+  }
+});
+
+// Gérer les messages privés
+DiscordAPI.nekSurMessagePrive(fonction(message) {
+  // Répondre aux messages privés
+  neko = ("Message privé reçu: " plus message.contenu);
+  
+  // Répondre automatiquement
+  message.repondre("Merci pour votre message ! Je suis un bot NekoScript.");
+});
+
+// Simuler l'exécution de quelques commandes pour tester le bot
+neko = ("\n--- Test des commandes ---");
+DiscordAPI.nekTesterCommande("!bonjour");
+DiscordAPI.nekTesterCommande("!aide");
+DiscordAPI.nekTesterCommande("!info");
+DiscordAPI.nekTesterCommande("!dé");
+DiscordAPI.nekTesterCommande("!sondage");
+
+// Simuler une réaction à un message
+neko = ("\n--- Test des réactions ---");
+DiscordAPI.nekTesterReaction("👍");
+
+// Afficher un message de fin
+neko = ("\nLe bot est prêt et en fonctionnement ! Il écoute les commandes commençant par '" plus PREFIX plus "'");

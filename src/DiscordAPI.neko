@@ -1,0 +1,273 @@
+// DiscordAPI.neko - Package pour l'API Discord officielle
+// Ce package permet de créer facilement des bots Discord en nekoScript
+// en utilisant l'API Discord officielle (via JavaScript sous le capot)
+
+// Variables globales
+variable monClient = null;
+variable estConnecte = faux;
+variable monToken = "";
+variable prefixeCommande = "!";
+variable commandes = {};
+variable reactions = {};
+
+// Fonction principale pour initialiser le client Discord
+fonction nekInitialiser(token, options) {
+  monToken = token;
+
+  // Dans l'implémentation complète, cela initialiserait réellement le client Discord.js
+  neko = ("Initialisation du client Discord avec le token: " plus token);
+  
+  // Configuration des options du bot
+  si (options) {
+    si (options.prefixe) {
+      prefixeCommande = options.prefixe;
+      neko = ("Préfixe des commandes défini: " plus prefixeCommande);
+    }
+  }
+  
+  monClient = {
+    "utilisateur": {
+      "tag": "MonBot#0000",
+      "id": "123456789012345678"
+    }
+  };
+  
+  nekRetour(vrai);
+}
+
+// Fonction pour connecter le bot à Discord
+fonction nekConnecter() {
+  si (monToken est égal à "") {
+    neko = ("Erreur: Token non défini. Utilisez nekInitialiser() d'abord.");
+    nekRetour(faux);
+  }
+  
+  neko = ("Connexion du bot à Discord...");
+  
+  // Dans l'implémentation complète, cela se connecterait réellement à Discord
+  neko = ("Bot connecté avec succès!");
+  neko = ("Connecté en tant que: " plus monClient.utilisateur.tag);
+  
+  estConnecte = vrai;
+  nekRetour(vrai);
+}
+
+// Définir le statut du bot
+fonction nekDefinirStatut(type, nom) {
+  si (estConnecte est égal à faux) {
+    neko = ("Erreur: Le bot n'est pas connecté. Utilisez nekConnecter() d'abord.");
+    nekRetour(faux);
+  }
+  
+  // Types valides: 'joue', 'regarde', 'écoute', 'diffuse'
+  neko = ("Statut du bot défini: " plus type plus " à " plus nom);
+  
+  // Dans l'implémentation complète, cela définirait réellement le statut
+  nekRetour(vrai);
+}
+
+// Fonction pour enregistrer une commande
+fonction nekCommande(nom, description, callback) {
+  neko = ("Enregistrement de la commande: " plus prefixeCommande plus nom);
+  
+  commandes[nom] = {
+    "nom": nom,
+    "description": description,
+    "callback": callback
+  };
+  
+  nekRetour(vrai);
+}
+
+// Fonction pour simuler la réception d'un message (pour tester le bot)
+fonction nekTesterCommande(nom, auteur, canal) {
+  si (estConnecte est égal à faux) {
+    neko = ("Erreur: Le bot n'est pas connecté. Utilisez nekConnecter() d'abord.");
+    nekRetour(faux);
+  }
+  
+  const commandeNom = nom.startsWith(prefixeCommande) ? nom.substring(prefixeCommande.length) : nom;
+  
+  si (commandes[commandeNom]) {
+    neko = ("Exécution de la commande: " plus commandeNom);
+    
+    // Simuler un objet message pour le callback
+    const message = {
+      "contenu": nom,
+      "auteur": auteur || { "tag": "Utilisateur#1234", "id": "987654321098765432" },
+      "canal": canal || { "nom": "général", "id": "111222333444555666" },
+      "repondre": fonction(texte) {
+        neko = ("Réponse envoyée: " plus texte);
+        nekRetour(vrai);
+      },
+      "reagir": fonction(emoji) {
+        neko = ("Réaction ajoutée: " plus emoji);
+        nekRetour(vrai);
+      }
+    };
+    
+    // Exécuter le callback de la commande
+    commandes[commandeNom].callback(message);
+    nekRetour(vrai);
+  } sinon {
+    neko = ("Commande inconnue: " plus commandeNom);
+    nekRetour(faux);
+  }
+}
+
+// Fonction pour créer un embed
+fonction nekEmbed(titre, description, couleur, champs) {
+  const embed = {
+    "titre": titre || "",
+    "description": description || "",
+    "couleur": couleur || "#FF6B7A",
+    "champs": champs || []
+  };
+  
+  nekRetour(embed);
+}
+
+// Fonction pour envoyer un message dans un canal
+fonction nekEnvoyer(canalId, message) {
+  si (estConnecte est égal à faux) {
+    neko = ("Erreur: Le bot n'est pas connecté. Utilisez nekConnecter() d'abord.");
+    nekRetour(faux);
+  }
+  
+  neko = ("Message envoyé dans le canal " plus canalId plus ": " plus message);
+  nekRetour(vrai);
+}
+
+// Fonction pour envoyer un embed dans un canal
+fonction nekEnvoyerEmbed(canalId, embed) {
+  si (estConnecte est égal à faux) {
+    neko = ("Erreur: Le bot n'est pas connecté. Utilisez nekConnecter() d'abord.");
+    nekRetour(faux);
+  }
+  
+  neko = ("Embed envoyé dans le canal " plus canalId);
+  neko = ("  Titre: " plus embed.titre);
+  neko = ("  Description: " plus embed.description);
+  
+  nekRetour(vrai);
+}
+
+// Ajouter un événement sur les réactions aux messages
+fonction nekSurReaction(callback) {
+  si (estConnecte est égal à faux) {
+    neko = ("Erreur: Le bot n'est pas connecté. Utilisez nekConnecter() d'abord.");
+    nekRetour(faux);
+  }
+  
+  neko = ("Événement sur réaction enregistré");
+  reactions["callback"] = callback;
+  
+  nekRetour(vrai);
+}
+
+// Fonction pour simuler une réaction (pour tester le bot)
+fonction nekTesterReaction(emoji, messageId, utilisateur) {
+  si (estConnecte est égal à faux) {
+    neko = ("Erreur: Le bot n'est pas connecté. Utilisez nekConnecter() d'abord.");
+    nekRetour(faux);
+  }
+  
+  si (reactions["callback"]) {
+    neko = ("Simulation d'une réaction: " plus emoji);
+    
+    // Simuler un objet réaction pour le callback
+    const reaction = {
+      "emoji": {
+        "nom": emoji
+      },
+      "message": {
+        "id": messageId || "123456789012345678",
+        "contenu": "Message de test",
+        "repondre": fonction(texte) {
+          neko = ("Réponse envoyée: " plus texte);
+          nekRetour(vrai);
+        }
+      },
+      "utilisateur": utilisateur || { "tag": "Utilisateur#1234", "id": "987654321098765432" }
+    };
+    
+    // Exécuter le callback de la réaction
+    reactions["callback"](reaction);
+    nekRetour(vrai);
+  } sinon {
+    neko = ("Aucun gestionnaire de réaction enregistré");
+    nekRetour(faux);
+  }
+}
+
+// Fonction pour gérer les messages privés
+fonction nekSurMessagePrive(callback) {
+  si (estConnecte est égal à faux) {
+    neko = ("Erreur: Le bot n'est pas connecté. Utilisez nekConnecter() d'abord.");
+    nekRetour(faux);
+  }
+  
+  neko = ("Gestionnaire de messages privés enregistré");
+  nekRetour(vrai);
+}
+
+// Fonction pour créer un bouton interactif (Discord Interactions API)
+fonction nekBouton(texte, style, id) {
+  const bouton = {
+    "texte": texte || "Cliquez-moi",
+    "style": style || "primary",
+    "id": id || "bouton_" plus (Math.random() * 1000).toFixed(0)
+  };
+  
+  nekRetour(bouton);
+}
+
+// Fonction pour récupérer des informations sur un serveur
+fonction nekInfoServeur(serveurId) {
+  si (estConnecte est égal à faux) {
+    neko = ("Erreur: Le bot n'est pas connecté. Utilisez nekConnecter() d'abord.");
+    nekRetour(faux);
+  }
+  
+  // Dans l'implémentation complète, cela récupérerait réellement les infos du serveur
+  const serveur = {
+    "id": serveurId || "111222333444555666",
+    "nom": "Serveur Example",
+    "membres": 100,
+    "owner": "Utilisateur#1234",
+    "canaux": ["général", "annonces", "discussion"]
+  };
+  
+  nekRetour(serveur);
+}
+
+// Fonction pour déconnecter le bot
+fonction nekDeconnecter() {
+  si (estConnecte est égal à faux) {
+    neko = ("Erreur: Le bot n'est pas connecté.");
+    nekRetour(faux);
+  }
+  
+  neko = ("Déconnexion du bot...");
+  estConnecte = faux;
+  
+  nekRetour(vrai);
+}
+
+// Exporter les fonctions du package
+nekoExport = {
+  "nekInitialiser": nekInitialiser,
+  "nekConnecter": nekConnecter,
+  "nekDefinirStatut": nekDefinirStatut,
+  "nekCommande": nekCommande,
+  "nekTesterCommande": nekTesterCommande,
+  "nekEmbed": nekEmbed,
+  "nekEnvoyer": nekEnvoyer,
+  "nekEnvoyerEmbed": nekEnvoyerEmbed,
+  "nekSurReaction": nekSurReaction,
+  "nekTesterReaction": nekTesterReaction,
+  "nekSurMessagePrive": nekSurMessagePrive,
+  "nekBouton": nekBouton,
+  "nekInfoServeur": nekInfoServeur,
+  "nekDeconnecter": nekDeconnecter
+};
