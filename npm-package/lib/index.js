@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Version de nekoScript
-export const VERSION = '1.0.0';
+export const VERSION = '1.0.4';
 
 // Chemin du dossier d'installation de nekoScript
 export const NEKO_HOME = process.env.NEKO_HOME || path.join(process.env.HOME || process.env.USERPROFILE, '.neko-script');

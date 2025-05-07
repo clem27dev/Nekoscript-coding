@@ -1,6 +1,6 @@
 {
   "name": "neko-coding",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "nekoScript - Un langage de programmation en français",
   "main": "lib/index.js",
   "type": "module",
