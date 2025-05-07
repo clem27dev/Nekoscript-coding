@@ -1,23 +1,80 @@
 
-// Bibliothèque Web.neko pour le développement web
+// Web.neko - Moteur web fullstack pour NekoScript
+// NEKO_IMPORT: import { JSDOM } from 'jsdom';
 
-// Crée une page web
-nekFonction("nekPage", fonction(titre, contenu) {
-  neko = ("Page web créée: " + titre);
+variable pages = {};
+variable styles = [];
+variable scripts = [];
+
+// Génère une balise HTML avec attributs et contenu
+nekFonction("nekhtml", fonction(balise, attributs, contenu) {
+  variable html = "<" plus balise;
+  
+  pour (attribut dans attributs) {
+    html = html plus " " plus attribut plus "=\"" plus attributs[attribut] plus "\"";
+  }
+  
+  html = html plus ">" plus contenu plus "</" plus balise plus ">";
+  nekRetourner(html);
+});
+
+// Définit une page complète
+nekFonction("nekpage", fonction(nom, contenuFonction) {
+  pages[nom] = contenuFonction;
+  neko = ("Page créée: " plus nom);
+  
+  // Génère le HTML complet
+  variable html = "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body>";
+  html = html plus contenuFonction();
+  html = html plus "</body></html>";
+  
+  nekRetourner(html);
+});
+
+// Génère du CSS
+nekFonction("nekstyle", fonction(selecteur, attributs) {
+  variable css = selecteur plus " {";
+  
+  pour (prop dans attributs) {
+    css = css plus prop plus ":" plus attributs[prop] plus ";";
+  }
+  
+  css = css plus "}";
+  styles.ajouter(css);
+  
+  nekRetourner(css);
+});
+
+// Injecte du JavaScript
+nekFonction("nekscript", fonction(fonctionJS) {
+  scripts.ajouter(fonctionJS);
+  nekRetourner(vrai);
+});
+
+// Ajoute des interactions
+nekFonction("nekinteractif", fonction(id, evenement, fonction) {
+  variable script = "document.getElementById('" plus id plus "').addEventListener('" plus evenement plus "', " plus fonction plus ");";
+  scripts.ajouter(script);
+  nekRetourner(vrai);
+});
+
+// Construit et sert la page
+nekFonction("nekconstruire", fonction() {
+  variable styleTag = "<style>" plus styles.joindre("\n") plus "</style>";
+  variable scriptTag = "<script>" plus scripts.joindre("\n") plus "</script>";
+  
   nekRetourner({
-    titre: titre,
-    contenu: contenu
+    pages: pages,
+    styles: styleTag,
+    scripts: scriptTag
   });
 });
 
-// Crée un style CSS
-nekFonction("nekStyle", fonction(element, propriete, valeur) {
-  neko = ("Style appliqué à l'élément " + element);
-  nekRetourner(true);
-});
-
-// Ajoute un événement
-nekFonction("nekEvenement", fonction(element, evenement, action) {
-  neko = ("Événement " + evenement + " ajouté à " + element);
-  nekRetourner(true);
-});
+nekoExport = {
+  "nekhtml": nekhtml,
+  "nekpage": nekpage,
+  "nekstyle": nekstyle,
+  "nekscript": nekscript,
+  "nekinteractif": nekinteractif,
+  "nekconstruire": nekconstruire
+};

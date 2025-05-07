@@ -1,0 +1,101 @@
+
+// Game.neko - Moteur de jeu pour NekoScript
+// NEKO_IMPORT: import p5 from 'p5';
+
+variable jeux = {};
+variable joueurs = {};
+variable canvas = null;
+variable moteurP5 = null;
+
+// Initialise un jeu
+nekFonction("nekjeu", fonction(nom, logique) {
+  jeux[nom] = logique;
+  neko = ("Jeu créé: " plus nom);
+  nekRetourner(vrai);
+});
+
+// Crée un joueur ou objet
+nekFonction("nekjoueur", fonction(id) {
+  joueurs[id] = {
+    x: 0,
+    y: 0,
+    vitesse: 0,
+    direction: "droite"
+  };
+  nekRetourner(joueurs[id]);
+});
+
+// Gère le rendu
+nekFonction("nekdessine", fonction(fonctionDessin) {
+  si (moteurP5) {
+    moteurP5.draw = fonction() {
+      fonctionDessin();
+    };
+  }
+  nekRetourner(vrai);
+});
+
+// Gère les mouvements
+nekFonction("nekmouvement", fonction(id, direction, vitesse) {
+  si (joueurs[id]) {
+    joueurs[id].direction = direction;
+    joueurs[id].vitesse = vitesse;
+    
+    selon (direction) {
+      cas "gauche": joueurs[id].x = joueurs[id].x moins vitesse; pause;
+      cas "droite": joueurs[id].x = joueurs[id].x plus vitesse; pause;
+      cas "haut": joueurs[id].y = joueurs[id].y moins vitesse; pause;
+      cas "bas": joueurs[id].y = joueurs[id].y plus vitesse; pause;
+    }
+  }
+  nekRetourner(vrai);
+});
+
+// Gère les collisions
+nekFonction("nekcollision", fonction(id1, id2, callback) {
+  si (joueurs[id1] et joueurs[id2]) {
+    variable obj1 = joueurs[id1];
+    variable obj2 = joueurs[id2];
+    
+    si (obj1.x < obj2.x plus 50 et
+        obj1.x plus 50 > obj2.x et
+        obj1.y < obj2.y plus 50 et
+        obj1.y plus 50 > obj2.y) {
+      callback();
+    }
+  }
+  nekRetourner(vrai);
+});
+
+// Gère les entrées clavier
+nekFonction("nekclavier", fonction(touche, callback) {
+  si (moteurP5) {
+    moteurP5.keyPressed = fonction() {
+      si (moteurP5.key est égal à touche) {
+        callback();
+      }
+    };
+  }
+  nekRetourner(vrai);
+});
+
+// Configure le canvas
+nekFonction("nekcanvas", fonction(id) {
+  canvas = id;
+  moteurP5 = nouveau p5(fonction(p) {
+    p.setup = fonction() {
+      p.createCanvas(400, 400);
+    };
+  }, id);
+  nekRetourner(vrai);
+});
+
+nekoExport = {
+  "nekjeu": nekjeu,
+  "nekjoueur": nekjoueur,
+  "nekdessine": nekdessine,
+  "nekmouvement": nekmouvement,
+  "nekcollision": nekcollision,
+  "nekclavier": nekclavier,
+  "nekcanvas": nekcanvas
+};
