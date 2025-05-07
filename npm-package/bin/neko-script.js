@@ -405,34 +405,53 @@ function publishPackage(packageName, sourcePath) {
       return;
     }
 
+    // Vérifier l'extension .neko
+    if (!sourcePath.endsWith('.neko')) {
+      console.error(`${colors.fg.red}Erreur: Le fichier doit avoir l'extension .neko${colors.reset}`);
+      return;
+    }
+
     const packageDir = path.join(NEKO_HOME, 'packages', packageName);
     if (!fs.existsSync(packageDir)) {
       fs.mkdirSync(packageDir, { recursive: true });
     }
 
-    // Copier le fichier source
+    // Copier le fichier source avec validation
     const content = fs.readFileSync(sourcePath, 'utf8');
+    if (!content.trim()) {
+      console.error(`${colors.fg.red}Erreur: Le fichier source est vide${colors.reset}`);
+      return;
+    }
+
     fs.writeFileSync(
-      path.join(packageDir, '1.0.0.neko'),
+      path.join(packageDir, 'latest.neko'),
       content,
       'utf8'
     );
 
-    // Créer le fichier metadata.json
-    const metadata = {
+    // Créer ou mettre à jour le fichier metadata.json
+    const metadataPath = path.join(packageDir, 'metadata.json');
+    let metadata = {
       name: packageName,
-      currentVersion: '1.0.0',
-      versions: ['1.0.0'],
-      published: new Date().toISOString()
+      version: '1.0.0',
+      lastUpdated: new Date().toISOString(),
+      author: process.env.REPL_OWNER || 'anonymous'
     };
 
+    if (fs.existsSync(metadataPath)) {
+      const existingMetadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+      metadata.version = existingMetadata.version;
+      const [major, minor, patch] = existingMetadata.version.split('.').map(Number);
+      metadata.version = `${major}.${minor}.${patch + 1}`;
+    }
+
     fs.writeFileSync(
-      path.join(packageDir, 'metadata.json'),
+      metadataPath,
       JSON.stringify(metadata, null, 2),
       'utf8'
     );
 
-    console.log(`${colors.fg.green}Package ${packageName} v1.0.0 publié avec succès!${colors.reset}`);
+    console.log(`${colors.fg.green}Package ${packageName} v${metadata.version} publié avec succès!${colors.reset}`);
     
     // Vérifier l'extension
     if (!packagePath.endsWith('.neko')) {
@@ -851,6 +870,11 @@ function updatePackageVersion(packageName, sourcePath, version) {
 // Fonction pour gérer la génération de code via Replit Assistant
 async function handleCodeGeneration(filePath) {
   try {
+    // Valider le chemin du fichier
+    if (!filePath.endsWith('.neko')) {
+      filePath += '.neko';
+    }
+
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout
@@ -863,13 +887,23 @@ async function handleCodeGeneration(filePath) {
       rl.question(`${colors.fg.green}Décris ce que tu veux que le code fasse :\n${colors.reset}`, resolve);
     });
     
+    if (!prompt.trim()) {
+      console.error(`${colors.fg.red}Erreur: La description ne peut pas être vide${colors.reset}`);
+      rl.close();
+      return;
+    }
+
     // Fermer l'interface readline
     rl.close();
 
-    // Vérifier si le fichier existe
-    const fileExists = fs.existsSync(filePath);
+    // Vérifier et créer le dossier parent si nécessaire
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     
     console.log(`\n${colors.fg.cyan}Génération du code via Replit Assistant...${colors.reset}`);
+    console.log(`${colors.fg.yellow}Le code sera généré dans: ${filePath}${colors.reset}`);
     console.log(`${colors.fg.yellow}Ouvrez l'onglet Replit Assistant pour voir la réponse générée.${colors.reset}\n`);
 
     // Préparer le message pour l'Assistant Replit
