@@ -459,14 +459,10 @@ function publishPackage(packageName, sourcePath) {
       return;
     }
     
-    // Lire le contenu du fichier
-    const content = fs.readFileSync(packagePath, 'utf8');
-    const packageName = path.basename(packagePath);
-    
     // Copier le fichier dans le dossier des packages
     fs.writeFileSync(
       path.join(NEKO_HOME, 'packages', packageName),
-      content,
+      fs.readFileSync(packagePath, 'utf8'),
       'utf8'
     );
     
