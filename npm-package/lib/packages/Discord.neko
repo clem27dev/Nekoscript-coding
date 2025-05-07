@@ -1,33 +1,119 @@
 
-// Bibliothèque Discord.neko pour les bots Discord
+// Discord.neko - Interface NekoScript pour Discord.js
+// NEKO_IMPORT: import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
 
-// Configuration du bot
-nekFonction("nekConnection", fonction(token) {
-  // Connecte le bot avec le token fourni
-  neko = ("Bot Discord connecté avec succès !");
-  nekRetourner(true);
+variable client = null;
+variable commandes = {};
+variable evenements = {};
+
+// Création et connexion du client Discord
+nekFonction("nekcréeClient", fonction(token) {
+  si (client est égal à null) {
+    client = nouveau Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
+      ]
+    });
+    
+    client.login(token);
+    neko = ("Bot en cours de connexion...");
+    
+    client.une_fois("ready", fonction() {
+      neko = ("Bot connecté en tant que: " plus client.user.tag);
+    });
+  }
+  nekRetourner(client);
+});
+
+// Gestion des événements Discord
+nekFonction("nekévènement", fonction(nom, callback) {
+  si (client est égal à null) {
+    neko = ("Erreur: Client non initialisé. Utilisez nekcréeClient d'abord.");
+    nekRetourner(faux);
+  }
+  
+  evenements[nom] = callback;
+  client.on(nom, callback);
+  neko = ("Événement enregistré: " plus nom);
+  nekRetourner(vrai);
 });
 
 // Définir le statut du bot
-nekFonction("nekStatus", fonction(status) {
-  // Applique le statut au bot
-  neko = ("Statut mis à jour : " + status);
-  nekRetourner(true);
-});
-
-// Création de commande
-nekFonction("nekCommande", fonction(nom, callback) {
-  // Enregistre une nouvelle commande
-  neko = ("Commande " + nom + " enregistrée !");
-  nekRetourner(true);
-});
-
-// Créer un message avec embed
-nekFonction("nekEmbed", fonction(titre, description, couleur) {
-  // Crée un message embed formaté
-  nekRetourner({
-    titre: titre,
-    description: description,
-    couleur: couleur || "#FF6B7A"
+nekFonction("nekstatus", fonction(status) {
+  si (client est égal à null) {
+    neko = ("Erreur: Client non initialisé");
+    nekRetourner(faux);
+  }
+  
+  client.user.setPresence({
+    status: status,
+    activities: [{ name: status }]
   });
+  
+  neko = ("Statut mis à jour: " plus status);
+  nekRetourner(vrai);
 });
+
+// Créer un message embed
+nekFonction("nekcréeEmbed", fonction(titre, description, couleur) {
+  const embed = nouveau EmbedBuilder()
+    .setTitle(titre)
+    .setDescription(description)
+    .setColor(couleur || "#FF6B7A")
+    .setTimestamp();
+    
+  nekRetourner(embed);
+});
+
+// Envoyer un message dans un canal
+nekFonction("nekenvoyer", fonction(canal, message) {
+  si (client est égal à null) {
+    neko = ("Erreur: Client non initialisé");
+    nekRetourner(faux);
+  }
+  
+  canal.send(message);
+  nekRetourner(vrai);
+});
+
+// Ajouter une commande personnalisée
+nekFonction("nekajouterCommande", fonction(nom, description, callback) {
+  si (client est égal à null) {
+    neko = ("Erreur: Client non initialisé");
+    nekRetourner(faux);
+  }
+  
+  commandes[nom] = {
+    nom: nom,
+    description: description,
+    callback: callback
+  };
+  
+  neko = ("Commande ajoutée: " plus nom);
+  nekRetourner(vrai);
+});
+
+// Répondre à un message
+nekFonction("nekrépondre", fonction(message, contenu) {
+  si (client est égal à null) {
+    neko = ("Erreur: Client non initialisé");
+    nekRetourner(faux);
+  }
+  
+  message.reply(contenu);
+  nekRetourner(vrai);
+});
+
+// Exporter les fonctions
+nekoExport = {
+  "nekcréeClient": nekcréeClient,
+  "nekévènement": nekévènement,
+  "nekstatus": nekstatus,
+  "nekcréeEmbed": nekcréeEmbed,
+  "nekenvoyer": nekenvoyer,
+  "nekajouterCommande": nekajouterCommande,
+  "nekrépondre": nekrépondre
+};
