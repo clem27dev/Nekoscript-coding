@@ -398,13 +398,41 @@ neko-script run src/main.neko
 }
 
 // Publier un package nekoScript
-function publishPackage(packagePath) {
+function publishPackage(packageName, sourcePath) {
   try {
-    // Vérifier si le fichier existe
-    if (!fs.existsSync(packagePath)) {
-      console.error(`${colors.fg.red}Erreur: Le fichier ${packagePath} n'existe pas.${colors.reset}`);
+    if (!fs.existsSync(sourcePath)) {
+      console.error(`${colors.fg.red}Erreur: Le fichier source ${sourcePath} n'existe pas.${colors.reset}`);
       return;
     }
+
+    const packageDir = path.join(NEKO_HOME, 'packages', packageName);
+    if (!fs.existsSync(packageDir)) {
+      fs.mkdirSync(packageDir, { recursive: true });
+    }
+
+    // Copier le fichier source
+    const content = fs.readFileSync(sourcePath, 'utf8');
+    fs.writeFileSync(
+      path.join(packageDir, '1.0.0.neko'),
+      content,
+      'utf8'
+    );
+
+    // Créer le fichier metadata.json
+    const metadata = {
+      name: packageName,
+      currentVersion: '1.0.0',
+      versions: ['1.0.0'],
+      published: new Date().toISOString()
+    };
+
+    fs.writeFileSync(
+      path.join(packageDir, 'metadata.json'),
+      JSON.stringify(metadata, null, 2),
+      'utf8'
+    );
+
+    console.log(`${colors.fg.green}Package ${packageName} v1.0.0 publié avec succès!${colors.reset}`);
     
     // Vérifier l'extension
     if (!packagePath.endsWith('.neko')) {
@@ -700,12 +728,21 @@ function main() {
       break;
     
     case 'publish':
-      if (args.length < 2) {
-        console.error(`${colors.fg.red}Erreur: Vous devez spécifier un fichier à publier.${colors.reset}`);
-        console.log(`Utilisation: neko-script publish <fichier.neko>`);
+      if (args.length < 3) {
+        console.error(`${colors.fg.red}Erreur: Syntaxe incorrecte.${colors.reset}`);
+        console.log(`Utilisation: neko-script publish <nom du package> <fichier source>`);
         break;
       }
-      publishPackage(args[1]);
+      publishPackage(args[1], args[2]);
+      break;
+
+    case 'package-new-version':
+      if (args.length < 4) {
+        console.error(`${colors.fg.red}Erreur: Syntaxe incorrecte.${colors.reset}`);
+        console.log(`Utilisation: neko-script package-new-version <nom package> <fichier source> <version>`);
+        break;
+      }
+      updatePackageVersion(args[1], args[2], args[3]);
       break;
     
     case 'librairie':
@@ -757,3 +794,46 @@ function main() {
 
 // Démarrer l'application
 main();
+function updatePackageVersion(packageName, sourcePath, version) {
+  try {
+    const packageDir = path.join(NEKO_HOME, 'packages', packageName);
+    const metadataPath = path.join(packageDir, 'metadata.json');
+
+    if (!fs.existsSync(packageDir) || !fs.existsSync(metadataPath)) {
+      console.error(`${colors.fg.red}Erreur: Le package ${packageName} n'existe pas.${colors.reset}`);
+      return;
+    }
+
+    // Lire les métadonnées
+    const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+    
+    // Vérifier si la version existe déjà
+    if (metadata.versions.includes(version)) {
+      console.error(`${colors.fg.red}Erreur: La version ${version} existe déjà.${colors.reset}`);
+      return;
+    }
+
+    // Copier le nouveau fichier source
+    const content = fs.readFileSync(sourcePath, 'utf8');
+    fs.writeFileSync(
+      path.join(packageDir, `${version}.neko`),
+      content,
+      'utf8'
+    );
+
+    // Mettre à jour les métadonnées
+    metadata.versions.push(version);
+    metadata.currentVersion = version;
+    metadata.lastUpdated = new Date().toISOString();
+
+    fs.writeFileSync(
+      metadataPath,
+      JSON.stringify(metadata, null, 2),
+      'utf8'
+    );
+
+    console.log(`${colors.fg.green}Package ${packageName} v${version} publié avec succès!${colors.reset}`);
+  } catch (error) {
+    console.error(`${colors.fg.red}Erreur lors de la mise à jour du package: ${error.message}${colors.reset}`);
+  }
+}

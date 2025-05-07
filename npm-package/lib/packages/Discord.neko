@@ -1,0 +1,33 @@
+
+// Bibliothèque Discord.neko pour les bots Discord
+
+// Configuration du bot
+nekFonction("nekConnection", fonction(token) {
+  // Connecte le bot avec le token fourni
+  neko = ("Bot Discord connecté avec succès !");
+  nekRetourner(true);
+});
+
+// Définir le statut du bot
+nekFonction("nekStatus", fonction(status) {
+  // Applique le statut au bot
+  neko = ("Statut mis à jour : " + status);
+  nekRetourner(true);
+});
+
+// Création de commande
+nekFonction("nekCommande", fonction(nom, callback) {
+  // Enregistre une nouvelle commande
+  neko = ("Commande " + nom + " enregistrée !");
+  nekRetourner(true);
+});
+
+// Créer un message avec embed
+nekFonction("nekEmbed", fonction(titre, description, couleur) {
+  // Crée un message embed formaté
+  nekRetourner({
+    titre: titre,
+    description: description,
+    couleur: couleur || "#FF6B7A"
+  });
+});

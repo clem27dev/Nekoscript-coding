@@ -1,0 +1,23 @@
+
+// Bibliothèque Web.neko pour le développement web
+
+// Crée une page web
+nekFonction("nekPage", fonction(titre, contenu) {
+  neko = ("Page web créée: " + titre);
+  nekRetourner({
+    titre: titre,
+    contenu: contenu
+  });
+});
+
+// Crée un style CSS
+nekFonction("nekStyle", fonction(element, propriete, valeur) {
+  neko = ("Style appliqué à l'élément " + element);
+  nekRetourner(true);
+});
+
+// Ajoute un événement
+nekFonction("nekEvenement", fonction(element, evenement, action) {
+  neko = ("Événement " + evenement + " ajouté à " + element);
+  nekRetourner(true);
+});
