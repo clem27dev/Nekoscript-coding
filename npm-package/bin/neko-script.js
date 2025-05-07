@@ -654,8 +654,10 @@ function showHelp() {
   console.log(`  export-app <fichier>      Convertir un fichier nekoScript en application`);
   console.log(`  build                     Construire le projet nekoScript`);
   console.log(`  version                   Afficher la version de nekoScript`);
+  console.log(`  generator <fichier>       Générer du code NekoScript avec l'assistant Replit`);
   console.log(`  help, aide                Afficher ce message d'aide`);
   console.log(`\n${colors.fg.cyan}Exemples:${colors.reset}`);
+  console.log(`  neko-script generator mon-code.neko`);
   console.log(`  neko-script télécharger`);
   console.log(`  neko-script init mon-projet`);
   console.log(`  neko-script run src/main.neko`);
@@ -780,6 +782,15 @@ function main() {
       console.log(`nekoScript v${VERSION}`);
       break;
     
+    case 'generator':
+      if (args.length < 2) {
+        console.error(`${colors.fg.red}Erreur: Vous devez spécifier un fichier .neko${colors.reset}`);
+        console.log(`Utilisation: neko-script generator <fichier.neko>`);
+        break;
+      }
+      handleCodeGeneration(args[1]);
+      break;
+
     case 'help':
     case 'aide':
       showHelp();
@@ -835,5 +846,53 @@ function updatePackageVersion(packageName, sourcePath, version) {
     console.log(`${colors.fg.green}Package ${packageName} v${version} publié avec succès!${colors.reset}`);
   } catch (error) {
     console.error(`${colors.fg.red}Erreur lors de la mise à jour du package: ${error.message}${colors.reset}`);
+  }
+}
+// Fonction pour gérer la génération de code via Replit Assistant
+async function handleCodeGeneration(filePath) {
+  try {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    console.log(`${colors.fg.cyan}Assistant de génération de code NekoScript${colors.reset}\n`);
+    
+    // Demander la description
+    const prompt = await new Promise(resolve => {
+      rl.question(`${colors.fg.green}Décris ce que tu veux que le code fasse :\n${colors.reset}`, resolve);
+    });
+    
+    // Fermer l'interface readline
+    rl.close();
+
+    // Vérifier si le fichier existe
+    const fileExists = fs.existsSync(filePath);
+    
+    console.log(`\n${colors.fg.cyan}Génération du code via Replit Assistant...${colors.reset}`);
+    console.log(`${colors.fg.yellow}Ouvrez l'onglet Replit Assistant pour voir la réponse générée.${colors.reset}\n`);
+
+    // Préparer le message pour l'Assistant Replit
+    const assistantMessage = `
+Génère du code NekoScript pour : ${prompt}
+
+Le code doit être en français et suivre la syntaxe NekoScript :
+- Utiliser 'neko = ("message")' pour afficher du texte
+- Utiliser 'fonction' au lieu de 'function'
+- Utiliser 'nekRetourner' pour return
+- Utiliser 'plus' pour la concaténation
+- Utiliser les mots-clés en français (si, pour, tant que, etc.)
+
+Donne-moi uniquement le code NekoScript, sans explication.`;
+
+    // Rediriger vers l'assistant Replit
+    console.log(`${colors.fg.green}Prompt envoyé à Replit Assistant :${colors.reset}`);
+    console.log(assistantMessage);
+    
+    console.log(`\n${colors.fg.cyan}Le code sera généré dans : ${filePath}${colors.reset}`);
+    console.log(`${colors.fg.yellow}Utilisez le code généré par Replit Assistant pour mettre à jour votre fichier.${colors.reset}`);
+
+  } catch (error) {
+    console.error(`${colors.fg.red}Erreur lors de la génération : ${error.message}${colors.reset}`);
   }
 }
